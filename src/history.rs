@@ -239,7 +239,7 @@ impl IndexMut<(Square, Move)> for CapstoneHist {
 
 #[derive(Copy, Clone)]
 struct CapstoneInfluenceHist {
-    entries: [[[Entry; Square::COUNT]; Square::COUNT]; Square::COUNT],
+    entries: [[[[Entry; PieceType::COUNT - 1]; Square::COUNT]; Square::COUNT]; Square::COUNT],
 }
 
 impl CapstoneInfluenceHist {
@@ -260,17 +260,17 @@ impl Default for CapstoneInfluenceHist {
     }
 }
 
-impl Index<(Square, Square, Square)> for CapstoneInfluenceHist {
+impl Index<(Square, Square, Square, PieceType)> for CapstoneInfluenceHist {
     type Output = Entry;
 
-    fn index(&self, (stm, nstm, sq): (Square, Square, Square)) -> &Self::Output {
-        &self.entries[stm][nstm][sq]
+    fn index(&self, (stm, nstm, sq, piece): (Square, Square, Square, PieceType)) -> &Self::Output {
+        &self.entries[stm][nstm][sq][piece.idx()]
     }
 }
 
-impl IndexMut<(Square, Square, Square)> for CapstoneInfluenceHist {
-    fn index_mut(&mut self, (stm, nstm, sq): (Square, Square, Square)) -> &mut Self::Output {
-        &mut self.entries[stm][nstm][sq]
+impl IndexMut<(Square, Square, Square, PieceType)> for CapstoneInfluenceHist {
+    fn index_mut(&mut self, (stm, nstm, sq, piece): (Square, Square, Square, PieceType)) -> &mut Self::Output {
+        &mut self.entries[stm][nstm][sq][piece.idx()]
     }
 }
 
@@ -324,7 +324,7 @@ impl History {
             let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
             tables.influence.entries[bucket][mv.sq().idx()].update(bonus);
             if let (Some(stm), Some(nstm)) = (pos.cap_sq(pos.stm()), pos.cap_sq(pos.stm().flip())) {
-                tables.capstone_influence[(stm, nstm, mv.sq())].update(bonus);
+                tables.capstone_influence[(stm, nstm, mv.sq(), mv.pt())].update(bonus);
             }
         }
         if let Some(prev) = prev {
@@ -343,7 +343,7 @@ impl History {
             let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
             let mut influence_hist = tables.influence.entries[bucket][mv.sq().idx()].get();
             if let (Some(stm), Some(nstm)) = (pos.cap_sq(pos.stm()), pos.cap_sq(pos.stm().flip())) {
-                influence_hist = (influence_hist + tables.capstone_influence[(stm, nstm, mv.sq())].get()) / 2;
+                influence_hist = (influence_hist + tables.capstone_influence[(stm, nstm, mv.sq(), mv.pt())].get()) / 2;
             }
             res += influence_hist;
         }
