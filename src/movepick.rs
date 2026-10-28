@@ -106,6 +106,7 @@ enum Stage {
     TtMove,
     Killer1,
     Killer2,
+    Killer3,
     GenMoves,
     Moves,
     End,
@@ -117,7 +118,8 @@ impl Stage {
         match *self {
             Self::TtMove => Self::Killer1,
             Self::Killer1 => Self::Killer2,
-            Self::Killer2 => Self::GenMoves,
+            Self::Killer2 => Self::Killer3,
+            Self::Killer3 => Self::GenMoves,
             Self::GenMoves => Self::Moves,
             Self::Moves => Self::End,
             Self::End => unreachable!(),
@@ -131,10 +133,11 @@ pub struct KillerTable {
 }
 
 impl KillerTable {
-    const COUNT: usize = 2;
+    const COUNT: usize = 3;
 
     pub fn push(&mut self, mv: Move) {
         if self.killers[0] != Some(mv) {
+            self.killers[2] = self.killers[1];
             self.killers[1] = self.killers[0];
             self.killers[0] = Some(mv);
         }
@@ -243,6 +246,15 @@ impl<'a> Movepicker<'a> {
                 }
                 Stage::Killer2 => {
                     if let Some(killer) = self.killers.killers[1]
+                        && self.tt_move.is_none_or(|tt_move| killer != tt_move)
+                        && self.pos.is_legal(killer)
+                    {
+                        self.stage = self.stage.next();
+                        return Some(killer);
+                    }
+                }
+                Stage::Killer3 => {
+                    if let Some(killer) = self.killers.killers[2]
                         && self.tt_move.is_none_or(|tt_move| killer != tt_move)
                         && self.pos.is_legal(killer)
                     {
