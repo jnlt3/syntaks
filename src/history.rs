@@ -296,17 +296,17 @@ impl History {
     #[must_use]
     pub fn score(&self, pos: &Position, mv: Move, prev: Option<Move>) -> i32 {
         let tables = &self.tables[pos.stm()];
-        let mut hist_count = 1;
-        let mut res = tables.hist[mv].get();
+        let mut res = tables.hist[mv].get() * 2;
+        let mut hist_weight = 2;
         if let Some(cap_sq) = pos.cap_sq(pos.stm()) {
-            res += tables.capstone_hist[cap_sq][mv].get();
-            hist_count += 1;
+            res += tables.capstone_hist[cap_sq][mv].get() * 2;
+            hist_weight += 2;
         }
         if let Some(opp_cap_sq) = pos.cap_sq(pos.stm().flip()) {
             res += tables.opp_capstone_hist[opp_cap_sq][mv].get();
-            hist_count += 1;
+            hist_weight += 1;
         }
-        res /= hist_count;
+        res /= hist_weight;
         if !mv.is_spread() {
             let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
             res += tables.influence.entries[bucket][mv.sq().idx()].get();
