@@ -233,7 +233,7 @@ impl<'a> Movepicker<'a> {
                     while self.idx < self.moves.len() {
                         let mv = self.pick_best();
                         self.idx += 1;
-                        if self.tt_move.is_none_or(|tt_move| mv != tt_move) && !self.killers.contains(mv) {
+                        if self.tt_move.is_none_or(|tt_move| mv != tt_move) {
                             return Some(mv);
                         }
                     }
