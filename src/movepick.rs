@@ -104,7 +104,6 @@ fn spread_wins_road(pos: &Position, info: &SpreadInfo) -> bool {
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 enum Stage {
     TtMove,
-    Killer1,
     GenMoves,
     Moves,
     End,
@@ -114,8 +113,7 @@ impl Stage {
     fn next(&self) -> Self {
         assert_ne!(*self, Self::End);
         match *self {
-            Self::TtMove => Self::Killer1,
-            Self::Killer1 => Self::GenMoves,
+            Self::TtMove => Self::GenMoves,
             Self::GenMoves => Self::Moves,
             Self::Moves => Self::End,
             Self::End => unreachable!(),
@@ -225,15 +223,6 @@ impl<'a> Movepicker<'a> {
                     {
                         self.stage = self.stage.next();
                         return Some(tt_move);
-                    }
-                }
-                Stage::Killer1 => {
-                    if let Some(killer) = self.killers.killers[0]
-                        && self.tt_move.is_none_or(|tt_move| killer != tt_move)
-                        && self.pos.is_legal(killer)
-                    {
-                        self.stage = self.stage.next();
-                        return Some(killer);
                     }
                 }
                 Stage::GenMoves => {
