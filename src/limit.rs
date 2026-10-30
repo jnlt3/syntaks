@@ -24,6 +24,7 @@
 use crate::core::Score;
 use crate::takmove::Move;
 use crate::thread::RootMove;
+use crate::tunable;
 use std::time::Instant;
 
 pub const MAX_MOVE_OVERHEAD_MS: u64 = 10000;
@@ -193,9 +194,8 @@ impl Limits {
 
     #[must_use]
     pub fn should_stop_hard(&self, nodes: usize) -> bool {
-        if let Some(max_nodes) = self.hard_nodes
-            && nodes >= max_nodes
-        {
+        tunable!(SEARCH_MAX_NODES: usize = 100000; range(0, 10000000));
+        if nodes >= SEARCH_MAX_NODES {
             return true;
         }
 
