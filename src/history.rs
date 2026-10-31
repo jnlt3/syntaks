@@ -167,7 +167,7 @@ impl IndexMut<Move> for ConthistTable {
 
 #[derive(Copy, Clone)]
 struct InfluenceHist {
-    entries: [[Entry; Square::COUNT]; Self::BUCKETS],
+    entries: [[[Entry; PieceType::COUNT]; Square::COUNT]; Self::BUCKETS],
 }
 
 impl InfluenceHist {
@@ -281,7 +281,7 @@ impl History {
         }
         if !mv.is_spread() {
             let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
-            tables.influence.entries[bucket][mv.sq().idx()].update(bonus);
+            tables.influence.entries[bucket][mv.sq().idx()][mv.pt()].update(bonus);
         }
         if let Some(prev) = prev {
             tables.conthist[prev][mv].update(bonus);
@@ -297,7 +297,7 @@ impl History {
         }
         if !mv.is_spread() {
             let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
-            res += tables.influence.entries[bucket][mv.sq().idx()].get();
+            res += tables.influence.entries[bucket][mv.sq().idx()][mv.pt()].get();
         }
         if let Some(prev) = prev {
             res += tables.conthist[prev][mv].get();
