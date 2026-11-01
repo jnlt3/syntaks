@@ -494,6 +494,10 @@ fn search<NT: NodeType>(
             extension += 1;
         }
 
+        if extension == 0 && !mv.is_spread() && mv.pt() == PieceType::Capstone {
+            extension += 1;
+        }
+
         let nodes_before = thread.nodes();
 
         let score = if let Some(state) = thread.check_terminal_state(ply, &new_pos, mv) {
