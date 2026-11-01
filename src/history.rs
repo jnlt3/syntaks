@@ -171,7 +171,7 @@ struct InfluenceHist {
 }
 
 impl InfluenceHist {
-    const BITS: u32 = 10;
+    const BITS: u32 = 9;
     const BUCKETS: usize = 1 << Self::BITS;
 
     fn bucket(influence: &[Bitboard; 4]) -> usize {
