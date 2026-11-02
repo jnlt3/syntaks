@@ -393,7 +393,7 @@ fn search<NT: NodeType>(
     let mut move_count = 0;
     let mut faillow_moves = arrayvec::ArrayVec::<Move, 32>::new();
 
-    while let Some(mv) = movepicker.next() {
+    while let Some((mv, move_score)) = movepicker.next() {
         debug_assert!(pos.is_legal(mv));
 
         if NT::ROOT_NODE && !thread.is_legal_root_move(mv) {
@@ -573,7 +573,11 @@ fn search<NT: NodeType>(
                     let bonus =
                         (LMR_HIST_BONUS_SCALE * new_depth - LMR_HIST_BONUS_OFFSET).clamp(0, LMR_HIST_BONUS_MAX * 1);
 
-                    history.update(mv, if score > alpha { bonus } else { -bonus });
+                    if score > alpha {
+                        history.update(mv, bonus)
+                    } else if !move_score.is_spread_gain() {
+                        history.update(mv, -bonus)
+                    };
                 }
             } else if !NT::PV_NODE || move_count > 1 {
                 score = -search::<NonPvNode>(

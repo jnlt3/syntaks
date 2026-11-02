@@ -34,6 +34,7 @@ use crate::stats;
 use crate::tunable;
 
 const SPREAD_ROAD_BONUS: i32 = 1 << 18;
+const SPREAD_ROAD_MARGIN: i32 = 1 << 17;
 tunable!(SPREAD_FLAT_GAIN: i32 = 5627; range(0, 8192));
 tunable!(PLACEMENT_PENALTY: i32 = 78; range(-2048, 2048));
 tunable!(WALL_SMASH_BONUS: i32 = 4215; range(0, 8192));
@@ -150,6 +151,19 @@ impl KillerTable {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum MoveScore {
+    Scored(i32),
+    KillerMove,
+    TtMove,
+}
+
+impl MoveScore {
+    pub fn is_spread_gain(self) -> bool {
+        matches!(self, Self::Scored(SPREAD_ROAD_MARGIN..))
+    }
+}
+
 pub struct Movepicker<'a> {
     pos: &'a Position,
     moves: &'a mut Vec<Move>,
@@ -210,7 +224,7 @@ impl<'a> Movepicker<'a> {
         }
     }
 
-    fn pick_best(&mut self) -> Move {
+    fn pick_best(&mut self) -> (Move, i32) {
         let packed_best = self
             .scores
             .iter()
@@ -225,10 +239,10 @@ impl<'a> Movepicker<'a> {
         self.scores.swap(self.idx, best_idx);
         self.moves.swap(self.idx, best_idx);
 
-        self.moves[self.idx]
+        (self.moves[self.idx], self.scores[self.idx])
     }
 
-    pub fn next(&mut self) -> Option<Move> {
+    pub fn next(&mut self) -> Option<(Move, MoveScore)> {
         while self.stage != Stage::End {
             match self.stage {
                 Stage::TtMove => {
@@ -236,7 +250,7 @@ impl<'a> Movepicker<'a> {
                         && self.pos.is_legal(tt_move)
                     {
                         self.stage = self.stage.next();
-                        return Some(tt_move);
+                        return Some((tt_move, MoveScore::TtMove));
                     }
                 }
                 Stage::Killer1 => {
@@ -245,7 +259,7 @@ impl<'a> Movepicker<'a> {
                         && self.pos.is_legal(killer)
                     {
                         self.stage = self.stage.next();
-                        return Some(killer);
+                        return Some((killer, MoveScore::KillerMove));
                     }
                 }
                 Stage::GenMoves => {
@@ -254,10 +268,10 @@ impl<'a> Movepicker<'a> {
                 }
                 Stage::Moves => {
                     while self.idx < self.moves.len() {
-                        let mv = self.pick_best();
+                        let (mv, score) = self.pick_best();
                         self.idx += 1;
                         if self.tt_move.is_none_or(|tt_move| mv != tt_move) && self.killers.killers[0] != Some(mv) {
-                            return Some(mv);
+                            return Some((mv, MoveScore::Scored(score)));
                         }
                     }
                 }
