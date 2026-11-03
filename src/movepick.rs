@@ -24,7 +24,7 @@
 use crate::bitboard::Bitboard;
 use crate::core::{PieceType, Score};
 use crate::history::HistorySlice;
-use crate::movegen::generate_moves;
+use crate::movegen::{generate_placements, generate_spreads, generate_starting_moves};
 use crate::position::Position;
 use crate::road::influence;
 use crate::takmove::Move;
@@ -33,7 +33,6 @@ use crate::takmove::Move;
 use crate::stats;
 use crate::tunable;
 
-const SPREAD_ROAD_BONUS: i32 = 1 << 18;
 tunable!(SPREAD_FLAT_GAIN: i32 = 5627; range(0, 8192));
 tunable!(PLACEMENT_PENALTY: i32 = 78; range(-2048, 2048));
 tunable!(WALL_SMASH_BONUS: i32 = 4215; range(0, 8192));
@@ -111,7 +110,9 @@ fn spread_wins_road(pos: &Position, info: &SpreadInfo) -> bool {
 enum Stage {
     TtMove,
     Killer1,
-    GenMoves,
+    GenSpreads,
+    WinningSpreads,
+    GenPlacements,
     Moves,
     End,
 }
@@ -121,8 +122,10 @@ impl Stage {
         assert_ne!(*self, Self::End);
         match *self {
             Self::TtMove => Self::Killer1,
-            Self::Killer1 => Self::GenMoves,
-            Self::GenMoves => Self::Moves,
+            Self::Killer1 => Self::GenSpreads,
+            Self::GenSpreads => Self::WinningSpreads,
+            Self::WinningSpreads => Self::GenPlacements,
+            Self::GenPlacements => Self::Moves,
             Self::Moves => Self::End,
             Self::End => unreachable!(),
         }
@@ -177,26 +180,36 @@ impl<'a> Movepicker<'a> {
         }
     }
 
-    fn score_moves(&mut self) {
-        self.scores.clear();
-        for &mv in self.moves.iter() {
+    fn next_winning(&mut self) -> Option<Move> {
+        for &mv in self.moves.iter().skip(self.scores.len()) {
+            assert!(mv.is_spread());
+            let info = spread_ordering_info(self.pos, mv);
+            if spread_wins_road(self.pos, &info) {
+                self.moves.swap_remove(self.idx);
+                return Some(mv);
+            }
+            let mut score = self.history.score(mv);
+            if self.killers.killers[1] == Some(mv) {
+                score += KILLER_MOVE_BONUS;
+            }
+            score += SPREAD_FLAT_GAIN * info.flat_delta;
+            if self.pos.top_pt(mv.spread_dest()) == Some(PieceType::Wall) {
+                score += WALL_SMASH_BONUS;
+            }
+            self.scores.push(score);
+        }
+        None
+    }
+
+    fn score_placements(&mut self, offset: usize) {
+        for &mv in self.moves.iter().skip(offset) {
+            assert!(!mv.is_spread());
             let mut score = self.history.score(mv);
 
             if self.killers.killers[1] == Some(mv) {
                 score += KILLER_MOVE_BONUS;
             }
-            if !mv.is_spread() {
-                score -= PLACEMENT_PENALTY;
-            } else {
-                let info = spread_ordering_info(self.pos, mv);
-                if spread_wins_road(self.pos, &info) {
-                    score += SPREAD_ROAD_BONUS;
-                }
-                score += SPREAD_FLAT_GAIN * info.flat_delta;
-                if self.pos.top_pt(mv.spread_dest()) == Some(PieceType::Wall) {
-                    score += WALL_SMASH_BONUS;
-                }
-            }
+            score -= PLACEMENT_PENALTY;
 
             // scores have to be less than 2²⁰ to make the movepicking more efficient
             debug_assert!(score.abs() < (1 << 20));
@@ -243,9 +256,28 @@ impl<'a> Movepicker<'a> {
                         return Some(killer);
                     }
                 }
-                Stage::GenMoves => {
-                    generate_moves(self.moves, self.pos);
-                    self.score_moves();
+                Stage::GenSpreads => {
+                    self.moves.clear();
+                    self.scores.clear();
+                    if self.pos.ply() < 2 {
+                        generate_starting_moves(self.moves, self.pos);
+                        self.score_placements(0);
+                        self.stage = Stage::Moves;
+                        continue;
+                    }
+                    generate_spreads(self.moves, self.pos);
+                }
+                Stage::WinningSpreads => {
+                    while let Some(mv) = self.next_winning() {
+                        if self.tt_move.is_none_or(|tt_move| mv != tt_move) && self.killers.killers[0] != Some(mv) {
+                            return Some(mv);
+                        }
+                    }
+                }
+                Stage::GenPlacements => {
+                    let offset = self.moves.len();
+                    generate_placements(self.moves, self.pos);
+                    self.score_placements(offset);
                 }
                 Stage::Moves => {
                     while self.idx < self.moves.len() {

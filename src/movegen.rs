@@ -26,13 +26,13 @@ use crate::hits::find_hits;
 use crate::position::Position;
 use crate::takmove::Move;
 
-fn generate_starting_moves(dst: &mut Vec<Move>, pos: &Position) {
+pub fn generate_starting_moves(dst: &mut Vec<Move>, pos: &Position) {
     for sq in !pos.occ() {
         dst.push(Move::placement(PieceType::Flat, sq));
     }
 }
 
-fn generate_placements(dst: &mut Vec<Move>, pos: &Position) {
+pub fn generate_placements(dst: &mut Vec<Move>, pos: &Position) {
     let flats = pos.flats_in_hand(pos.stm());
     let caps = pos.caps_in_hand(pos.stm());
 
@@ -64,7 +64,7 @@ fn do_spreads(dst: &mut Vec<Move>, sq: Square, dir: Direction, lsb: u16, mut pat
     }
 }
 
-fn generate_spreads(dst: &mut Vec<Move>, pos: &Position) {
+pub fn generate_spreads(dst: &mut Vec<Move>, pos: &Position) {
     for sq in pos.color_bb(pos.stm()) {
         let top_pt = pos.top_pt(sq).unwrap();
         let max = pos.height(sq).min(6);
