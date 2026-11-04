@@ -743,7 +743,7 @@ fn search<NT: NodeType>(
             history.update(mv, -malus);
         }
 
-        if best_score >= beta {
+        if best_score >= beta && !is_decisive(best_score) {
             thread.killers[ply].push(best_move);
         }
     }
