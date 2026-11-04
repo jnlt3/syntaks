@@ -587,7 +587,7 @@ fn search<NT: NodeType>(
 
                 if mv.is_spread() {
                     let gain = (new_pos.hfcd(pos.stm()) - pos.hfcd(pos.stm())) / 2;
-                    r += (1 - gain).clamp(0, 3) * SPREAD_GAIN_LMR;
+                    r += i32::from(gain < 1) * SPREAD_GAIN_LMR;
                 }
 
                 r /= 1024;
