@@ -38,7 +38,7 @@ tunable!(SPREAD_FLAT_GAIN: i32 = 5627; range(0, 8192));
 tunable!(PLACEMENT_PENALTY: i32 = 78; range(-2048, 2048));
 tunable!(WALL_SMASH_BONUS: i32 = 4215; range(0, 8192));
 
-tunable!(KILLER_MOVE_BONUS_1: i32 = 32768; range(-32768, 32768));
+const KILLER_MOVE_BONUS_1: i32 = 1 << 16;
 tunable!(KILLER_MOVE_BONUS_2: i32 = 16442; range(-32768, 32768));
 
 struct SpreadInfo {
