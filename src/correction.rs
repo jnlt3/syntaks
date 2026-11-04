@@ -52,11 +52,11 @@ impl Entry {
 }
 
 #[derive(Clone)]
-struct HashedTable<const ENTRIES: usize> {
+struct HashedTable<const ENTRIES: usize, const KEY_SHIFT: usize = 0> {
     entries: [Entry; ENTRIES],
 }
 
-impl<const ENTRIES: usize> HashedTable<ENTRIES> {
+impl<const ENTRIES: usize, const KEY_SHIFT: usize> HashedTable<ENTRIES, KEY_SHIFT> {
     const fn new() -> Self {
         Self {
             entries: [const { Entry::new() }; _],
@@ -68,16 +68,17 @@ impl<const ENTRIES: usize> HashedTable<ENTRIES> {
     }
 }
 
-impl<const ENTRIES: usize> Default for HashedTable<ENTRIES> {
+impl<const ENTRIES: usize, const KEY_SHIFT: usize> Default for HashedTable<ENTRIES, KEY_SHIFT> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const ENTRIES: usize> Index<u64> for HashedTable<ENTRIES> {
+impl<const ENTRIES: usize, const KEY_SHIFT: usize> Index<u64> for HashedTable<ENTRIES, KEY_SHIFT> {
     type Output = Entry;
 
     fn index(&self, index: u64) -> &Self::Output {
+        let index = index >> KEY_SHIFT;
         &self.entries[index as usize % ENTRIES]
     }
 }
@@ -113,7 +114,8 @@ fn reserves_key(pos: &Position) -> u64 {
 
 pub struct CorrectionHistory {
     tables: [SidedTables; Color::COUNT],
-    cont: HashedTable<CONT_ENTRIES>,
+    cont_primary: HashedTable<CONT_ENTRIES>,
+    cont_secondary: HashedTable<CONT_ENTRIES, 32>,
 }
 
 impl CorrectionHistory {
@@ -130,14 +132,15 @@ impl CorrectionHistory {
         for table in self.tables.iter() {
             table.clear();
         }
-        self.cont.clear();
+        self.cont_primary.clear();
+        self.cont_secondary.clear();
     }
 
     pub fn slice<'a>(&'a self, pos: &Position, key_history: &[u64]) -> CorrectionHistorySlice<'a> {
-        let get_cont = |offset: usize| {
+        let get_cont_key = |offset: usize| {
             if key_history.len() >= offset {
                 let diff = pos.key() ^ key_history[key_history.len() - offset];
-                Some(&self.cont[diff])
+                Some(diff)
             } else {
                 None
             }
@@ -149,8 +152,8 @@ impl CorrectionHistory {
             road: &tables.road[pos.road_key()],
             tops: &tables.tops[pos.top_key()],
             reserves: &tables.reserves[reserves_key(pos)],
-            cont_1: get_cont(1),
-            cont_2: get_cont(2),
+            cont_1: get_cont_key(1).map(|key| (&self.cont_primary[key], &self.cont_secondary[key])),
+            cont_2: get_cont_key(2).map(|key| &self.cont_primary[key]),
         }
     }
 }
@@ -161,7 +164,7 @@ pub struct CorrectionHistorySlice<'a> {
     road: &'a Entry,
     tops: &'a Entry,
     reserves: &'a Entry,
-    cont_1: Option<&'a Entry>,
+    cont_1: Option<(&'a Entry, &'a Entry)>,
     cont_2: Option<&'a Entry>,
 }
 
@@ -173,7 +176,7 @@ impl<'a> CorrectionHistorySlice<'a> {
         correction += self.tops.get();
         correction += self.reserves.get();
 
-        correction += self.cont_1.map_or(0, Entry::get);
+        correction += self.cont_1.map_or(0, |(e1, e2)| e1.get() + e2.get()) / 2;
         correction += self.cont_2.map_or(0, Entry::get);
 
         correction / 32
@@ -187,8 +190,9 @@ impl<'a> CorrectionHistorySlice<'a> {
         self.road.update(bonus);
         self.tops.update(bonus);
         self.reserves.update(bonus);
-        if let Some(cont_1) = self.cont_1 {
-            cont_1.update(bonus);
+        if let Some((e1, e2)) = self.cont_1 {
+            e1.update(bonus);
+            e2.update(bonus);
         }
         if let Some(cont_2) = self.cont_2 {
             cont_2.update(bonus);
