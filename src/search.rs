@@ -464,6 +464,10 @@ fn search<NT: NodeType>(
                     break;
                 }
             }
+
+            if depth <= 3 && static_eval <= alpha && history.combined_hist(mv) < (-depth * 4096) {
+                continue;
+            }
         }
 
         move_count += 1;
