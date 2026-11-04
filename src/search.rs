@@ -436,7 +436,7 @@ fn search<NT: NodeType>(
     let mut move_count = 0;
     let mut faillow_moves = arrayvec::ArrayVec::<Move, 32>::new();
 
-    while let Some(mv) = movepicker.next() {
+    while let Some((mv, mv_score)) = movepicker.next() {
         debug_assert!(pos.is_legal(mv));
 
         if NT::ROOT_NODE && !thread.is_legal_root_move(mv) {
@@ -463,6 +463,15 @@ fn search<NT: NodeType>(
                 if move_count as i32 >= limit {
                     break;
                 }
+            }
+
+            if !NT::PV_NODE
+                && depth <= 3
+                && !mv_score.is_road_win()
+                && static_eval <= alpha
+                && history.combined_hist(mv) < -(4096 + depth * 4096)
+            {
+                continue;
             }
         }
 
