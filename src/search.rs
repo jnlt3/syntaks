@@ -463,6 +463,14 @@ fn search<NT: NodeType>(
                 if move_count as i32 >= limit {
                     break;
                 }
+
+                if depth <= 3
+                    && move_count as i32 * 2 >= limit
+                    && static_eval <= alpha
+                    && history.score(mv) < (-depth * 4096)
+                {
+                    continue;
+                }
             }
         }
 
