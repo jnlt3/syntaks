@@ -166,16 +166,16 @@ impl Index<Move> for ConthistTable {
 
 #[derive(Clone)]
 struct InfluenceHist {
-    entries: [[Entry; Square::COUNT]; Self::BUCKETS],
+    entries: [[[Entry; PieceType::COUNT]; Square::COUNT]; Self::BUCKETS],
 }
 
 impl InfluenceHist {
-    const BITS: u32 = 10;
+    const BITS: u32 = 9;
     const BUCKETS: usize = 1 << Self::BITS;
 
     const fn new() -> Self {
         Self {
-            entries: [const { [const { Entry::new() }; Square::COUNT] }; Self::BUCKETS],
+            entries: [const { [const { [const { Entry::new() }; PieceType::COUNT] }; Square::COUNT] }; Self::BUCKETS],
         }
     }
 
@@ -191,8 +191,10 @@ impl InfluenceHist {
     }
 
     fn clear(&self) {
-        for bucket in self.entries.iter() {
-            bucket.iter().for_each(|entry| entry.value.set(0));
+        for pt_buckets in self.entries.iter() {
+            for bucket in pt_buckets {
+                bucket.iter().for_each(|entry| entry.value.set(0));
+            }
         }
     }
 }
@@ -290,7 +292,7 @@ pub struct HistorySlice<'a> {
     hist: &'a CombinedHist,
     capstone_hist: Option<&'a CombinedHist>,
     conthist: Option<&'a ConthistSubTable>,
-    influence: &'a [Entry; Square::COUNT],
+    influence: &'a [[Entry; PieceType::COUNT]; Square::COUNT],
 }
 
 impl<'a> HistorySlice<'a> {
@@ -300,7 +302,7 @@ impl<'a> HistorySlice<'a> {
             res = (res + capstone_hist[mv].get()) / 2;
         }
         if !mv.is_spread() {
-            res += self.influence[mv.sq().idx()].get();
+            res += self.influence[mv.sq().idx()][mv.pt()].get();
         }
         if let Some(conthist) = self.conthist {
             res += conthist[mv].get();
@@ -315,7 +317,7 @@ impl<'a> HistorySlice<'a> {
             capstone_hist[mv].update(bonus);
         }
         if !mv.is_spread() {
-            self.influence[mv.sq().idx()].update(bonus);
+            self.influence[mv.sq().idx()][mv.pt()].update(bonus);
         }
         if let Some(conthist) = self.conthist {
             conthist[mv].update(bonus);
