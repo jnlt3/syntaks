@@ -37,7 +37,9 @@ const SPREAD_ROAD_BONUS: i32 = 1 << 18;
 tunable!(SPREAD_FLAT_GAIN: i32 = 5627; range(0, 8192));
 tunable!(PLACEMENT_PENALTY: i32 = 78; range(-2048, 2048));
 tunable!(WALL_SMASH_BONUS: i32 = 4215; range(0, 8192));
-tunable!(KILLER_MOVE_BONUS: i32 = 16442; range(-32768, 32768));
+
+tunable!(KILLER_MOVE_BONUS_1: i32 = 32768; range(-32768, 32768));
+tunable!(KILLER_MOVE_BONUS_2: i32 = 16442; range(-32768, 32768));
 
 struct SpreadInfo {
     roads: Bitboard,
@@ -110,7 +112,6 @@ fn spread_wins_road(pos: &Position, info: &SpreadInfo) -> bool {
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 enum Stage {
     TtMove,
-    Killer1,
     GenMoves,
     Moves,
     End,
@@ -120,8 +121,7 @@ impl Stage {
     fn next(&self) -> Self {
         assert_ne!(*self, Self::End);
         match *self {
-            Self::TtMove => Self::Killer1,
-            Self::Killer1 => Self::GenMoves,
+            Self::TtMove => Self::GenMoves,
             Self::GenMoves => Self::Moves,
             Self::Moves => Self::End,
             Self::End => unreachable!(),
@@ -182,8 +182,10 @@ impl<'a> Movepicker<'a> {
         for &mv in self.moves.iter() {
             let mut score = self.history.score(mv);
 
-            if self.killers.killers[1] == Some(mv) {
-                score += KILLER_MOVE_BONUS;
+            if self.killers.killers[0] == Some(mv) {
+                score += KILLER_MOVE_BONUS_1;
+            } else if self.killers.killers[1] == Some(mv) {
+                score += KILLER_MOVE_BONUS_2;
             }
             if !mv.is_spread() {
                 score -= PLACEMENT_PENALTY;
@@ -234,15 +236,6 @@ impl<'a> Movepicker<'a> {
                         return Some(tt_move);
                     }
                 }
-                Stage::Killer1 => {
-                    if let Some(killer) = self.killers.killers[0]
-                        && self.tt_move.is_none_or(|tt_move| killer != tt_move)
-                        && self.pos.is_legal(killer)
-                    {
-                        self.stage = self.stage.next();
-                        return Some(killer);
-                    }
-                }
                 Stage::GenMoves => {
                     generate_moves(self.moves, self.pos);
                     self.score_moves();
@@ -251,7 +244,7 @@ impl<'a> Movepicker<'a> {
                     while self.idx < self.moves.len() {
                         let mv = self.pick_best();
                         self.idx += 1;
-                        if self.tt_move.is_none_or(|tt_move| mv != tt_move) && self.killers.killers[0] != Some(mv) {
+                        if self.tt_move.is_none_or(|tt_move| mv != tt_move) {
                             return Some(mv);
                         }
                     }
