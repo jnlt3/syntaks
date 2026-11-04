@@ -469,7 +469,7 @@ fn search<NT: NodeType>(
                 && depth <= 3
                 && !mv_score.is_road_win()
                 && static_eval <= alpha
-                && history.combined_hist(mv) < -(4096 + depth * 4096)
+                && history.score(mv) < -(4096 + depth * 4096)
             {
                 continue;
             }

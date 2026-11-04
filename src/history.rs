@@ -294,10 +294,6 @@ pub struct HistorySlice<'a> {
 }
 
 impl<'a> HistorySlice<'a> {
-    pub fn combined_hist(&self, mv: Move) -> i32 {
-        self.hist[mv].get()
-    }
-
     pub fn score(&self, mv: Move) -> i32 {
         let mut res = self.hist[mv].get();
         if let Some(capstone_hist) = self.capstone_hist {
