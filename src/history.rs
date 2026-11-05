@@ -294,6 +294,20 @@ pub struct HistorySlice<'a> {
 }
 
 impl<'a> HistorySlice<'a> {
+    pub fn move_ord_score(&self, mv: Move) -> i32 {
+        let mut res = self.hist[mv].get();
+        if let Some(capstone_hist) = self.capstone_hist {
+            res += capstone_hist[mv].get();
+        }
+        if !mv.is_spread() {
+            res += self.influence[mv.sq().idx()].get();
+        }
+        if let Some(conthist) = self.conthist {
+            res += conthist[mv].get();
+        }
+        res
+    }
+
     pub fn score(&self, mv: Move) -> i32 {
         let mut res = self.hist[mv].get();
         if let Some(capstone_hist) = self.capstone_hist {
