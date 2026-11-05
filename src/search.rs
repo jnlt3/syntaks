@@ -753,9 +753,10 @@ fn search<NT: NodeType>(
     }
 
     if excluded.is_none() {
-        if tt_flag == TtFlag::Exact
+        if (tt_flag == TtFlag::Exact
             || (tt_flag == TtFlag::UpperBound && best_score < static_eval)
-            || (tt_flag == TtFlag::LowerBound && best_score > static_eval)
+            || (tt_flag == TtFlag::LowerBound && best_score > static_eval))
+            && !is_decisive(best_score)
         {
             corrhist.update(depth, best_score, static_eval);
         }
