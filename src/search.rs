@@ -593,6 +593,10 @@ fn search<NT: NodeType>(
                 r -= history.score(mv) * HIST_LMR / 24576;
                 r -= (correction.abs() * CORR_LMR / 64).min(1024);
 
+                let stones =
+                    62 - i32::from(new_pos.stones_in_hand(Color::White) + new_pos.stones_in_hand(Color::Black));
+                r -= stones * 8;
+
                 let our_influence = new_pos.influence(pos.stm());
                 let threats = (((our_influence[0] & our_influence[1]) | (our_influence[2] & our_influence[3]))
                     & !new_pos.occ())
