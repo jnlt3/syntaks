@@ -356,9 +356,14 @@ fn search<NT: NodeType>(
     thread.stack[ply].static_eval = static_eval;
 
     let improving = ply < 2 || static_eval > thread.stack[ply - 2].static_eval;
+    let worsening = ply < 2 || static_eval + 500 < thread.stack[ply - 2].static_eval;
     let opp_worsening = ply > 0 && static_eval > -thread.stack[ply - 1].static_eval;
 
     if !NT::PV_NODE && excluded.is_none() {
+        if depth <= 1 && worsening && static_eval <= alpha {
+            return alpha;
+        }
+
         let parent_reduction = thread.stack[ply - 1].reduction;
         let parent_static_eval = thread.stack[ply - 1].static_eval;
 
