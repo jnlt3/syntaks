@@ -137,7 +137,7 @@ impl DynamicLmrTable {
     }
 }
 
-tunable!(LMR_BASE: i32 = 0; range(0, 4096));
+tunable!(LMR_BASE: i32 = 416; range(0, 4096));
 tunable!(LMR_SCALE: i32 = 350; range(0, 1024));
 
 #[cfg(not(feature = "tune"))]
@@ -595,7 +595,7 @@ fn search<NT: NodeType>(
 
                 let stones =
                     62 - i32::from(new_pos.stones_in_hand(Color::White) + new_pos.stones_in_hand(Color::Black));
-                r -= stones * 8;
+                r -= stones * 16;
 
                 let our_influence = new_pos.influence(pos.stm());
                 let threats = (((our_influence[0] & our_influence[1]) | (our_influence[2] & our_influence[3]))
