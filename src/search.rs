@@ -356,6 +356,7 @@ fn search<NT: NodeType>(
     thread.stack[ply].static_eval = static_eval;
 
     let improving = ply < 2 || static_eval > thread.stack[ply - 2].static_eval;
+    let worsening = ply < 2 || static_eval + 500 < thread.stack[ply - 2].static_eval;
     let opp_worsening = ply > 0 && static_eval > -thread.stack[ply - 1].static_eval;
 
     if !NT::PV_NODE && excluded.is_none() {
@@ -364,6 +365,10 @@ fn search<NT: NodeType>(
 
         if depth < MAX_DEPTH && parent_reduction >= 3 && static_eval + parent_static_eval <= 0 {
             depth += 1;
+        }
+
+        if depth <= 1 && worsening && static_eval + 1000 <= alpha {
+            return alpha;
         }
 
         tunable!(RFP_DEPTH_SCALE: i32 = 92; range(0, 256));
