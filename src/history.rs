@@ -297,7 +297,7 @@ impl<'a> HistorySlice<'a> {
     pub fn score(&self, mv: Move) -> i32 {
         let mut res = self.hist[mv].get();
         if let Some(capstone_hist) = self.capstone_hist {
-            res = (res + capstone_hist[mv].get()) / 2;
+            res = (res + capstone_hist[mv].get() * 2) / 3;
         }
         if !mv.is_spread() {
             res += self.influence[mv.sq().idx()].get();
