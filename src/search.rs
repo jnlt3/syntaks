@@ -137,7 +137,7 @@ impl DynamicLmrTable {
     }
 }
 
-tunable!(LMR_BASE: i32 = 0; range(0, 4096));
+tunable!(LMR_BASE: i32 = 208; range(0, 4096));
 tunable!(LMR_SCALE: i32 = 350; range(0, 1024));
 
 #[cfg(not(feature = "tune"))]
