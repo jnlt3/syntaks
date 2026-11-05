@@ -308,6 +308,17 @@ impl<'a> HistorySlice<'a> {
         res
     }
 
+    pub fn move_ord_score(&self, mv: Move) -> i32 {
+        let mut res = self.hist[mv].get();
+        if !mv.is_spread() {
+            res += self.influence[mv.sq().idx()].get();
+        }
+        if let Some(conthist) = self.conthist {
+            res += conthist[mv].get();
+        }
+        res
+    }
+
     pub fn update(&self, mv: Move, bonus: i32) {
         let bonus = bonus.clamp(-History::MAX_BONUS, History::MAX_BONUS);
         self.hist[mv].update(bonus);
