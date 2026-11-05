@@ -378,7 +378,7 @@ fn search<NT: NodeType>(
             - RFP_IMPROVING * i32::from(improving)
             - RFP_OPP_WORSENING * i32::from(opp_worsening))
         .max(0);
-        if depth <= 10 && static_eval - rfp_margin >= beta {
+        if depth <= 12 && static_eval - rfp_margin >= beta {
             return if !is_decisive(static_eval) && !is_decisive(beta) {
                 (static_eval + beta) / 2
             } else {
