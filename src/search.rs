@@ -331,12 +331,12 @@ fn search<NT: NodeType>(
         tt_entry.mv
     };
 
-    if excluded.is_none()
-        && (NT::PV_NODE || expected_cutnode)
-        && depth >= 3
-        && (tt_move.is_none() || (tt_hit && tt_entry.depth + 2 < depth))
-    {
-        depth -= 1;
+    if excluded.is_none() && (NT::PV_NODE || expected_cutnode) && depth >= 3 {
+        if tt_move.is_none() {
+            depth -= 1 + i32::from(!tt_hit);
+        } else if tt_hit && tt_entry.depth + 2 < depth {
+            depth -= 1;
+        }
     }
 
     let raw_eval = if tt_hit {
