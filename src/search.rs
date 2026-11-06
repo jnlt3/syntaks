@@ -806,7 +806,29 @@ fn leaf<NT: NodeType>(
         return account_for_spread(tt_entry.score, pos, ply, beta);
     }
 
-    let raw_eval = if tt_hit {
+    let mut eval = None;
+    let correction = thread.corrhist.slice(pos, &thread.key_history).get();
+    if !NT::PV_NODE {
+        let roadables_on_board = 62
+            - u32::from(pos.stones_in_hand(Color::White) + pos.stones_in_hand(Color::Black))
+            - pos.all_blockers().popcount();
+
+        if roadables_on_board >= 14 && tt_entry.mv.is_none() {
+            let raw_eval = if tt_hit {
+                tt_entry.raw_static_eval
+            } else {
+                static_eval(&mut thread.nnue_state, pos)
+            };
+            if raw_eval + correction <= alpha && spread_road_win(pos).is_some() {
+                return win_in(ply);
+            }
+            eval = Some(raw_eval);
+        }
+    }
+
+    let raw_eval = if let Some(eval) = eval {
+        eval
+    } else if tt_hit {
         tt_entry.raw_static_eval
     } else {
         static_eval(&mut thread.nnue_state, pos)
@@ -816,7 +838,6 @@ fn leaf<NT: NodeType>(
         thread.shared().tt.store_static_eval(pos.key(), raw_eval);
     }
 
-    let correction = thread.corrhist.slice(pos, &thread.key_history).get();
     let static_eval = raw_eval + correction;
 
     if ply >= MAX_DEPTH as usize {
