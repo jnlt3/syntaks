@@ -592,6 +592,7 @@ fn search<NT: NodeType>(
                 r += IMPROVING_LMR * i32::from(!improving);
                 r -= history.score(mv) * HIST_LMR / 24576;
                 r -= (correction.abs() * CORR_LMR / 64).min(1024);
+                r += 256 * i32::from(tt_move.is_some());
 
                 let our_influence = new_pos.influence(pos.stm());
                 let threats = (((our_influence[0] & our_influence[1]) | (our_influence[2] & our_influence[3]))
