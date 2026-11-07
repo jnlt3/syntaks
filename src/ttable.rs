@@ -376,10 +376,9 @@ impl TranspositionTable {
         let existing_key = cluster.keys.get(slot);
         let existing_entry = cluster.entries[slot].load();
 
-        let replace = flag == Some(TtFlag::Exact)
-            || entry_key != existing_key
+        let replace = entry_key != existing_key
             || existing_entry.age_flag.age() != self.age
-            || depth + 4 > existing_entry.depth();
+            || depth + 4 + i32::from(flag == Some(TtFlag::Exact)) > existing_entry.depth();
 
         if !replace {
             return;
