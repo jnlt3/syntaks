@@ -299,9 +299,9 @@ impl<'a> HistorySlice<'a> {
         if let Some(capstone_hist) = self.capstone_hist {
             res = (res + capstone_hist[mv].get()) / 2;
         }
-        if !mv.is_spread() {
-            res += self.influence[mv.sq().idx()].get();
-        }
+        let target = if mv.is_spread() { mv.spread_dest() } else { mv.sq() };
+        res += self.influence[target].get();
+
         if let Some(conthist) = self.conthist {
             res += conthist[mv].get();
         }
@@ -314,9 +314,10 @@ impl<'a> HistorySlice<'a> {
         if let Some(capstone_hist) = self.capstone_hist {
             capstone_hist[mv].update(bonus);
         }
-        if !mv.is_spread() {
-            self.influence[mv.sq().idx()].update(bonus);
-        }
+
+        let target = if mv.is_spread() { mv.spread_dest() } else { mv.sq() };
+        self.influence[target].update(bonus);
+
         if let Some(conthist) = self.conthist {
             conthist[mv].update(bonus);
         }
