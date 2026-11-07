@@ -22,7 +22,7 @@
  */
 
 use crate::bitboard::Bitboard;
-use crate::core::{Color, Direction, Square};
+use crate::core::{Color, Square};
 use crate::takmove::Move;
 use crate::{core::PieceType, position::Position};
 use std::cell::Cell;
@@ -124,7 +124,7 @@ struct ConthistTable {
 
 impl ConthistTable {
     // one for each placement type, and 4 spread directions
-    const MOVE_TYPES: usize = PieceType::COUNT + Direction::COUNT;
+    const MOVE_TYPES: usize = PieceType::COUNT + Square::COUNT;
     const ENTRIES: usize = Self::MOVE_TYPES * Square::COUNT;
 
     const fn new() -> Self {
@@ -136,9 +136,9 @@ impl ConthistTable {
     #[must_use]
     fn move_idx(mv: Move) -> usize {
         let type_idx = if mv.is_spread() {
-            mv.dir().idx()
+            mv.spread_dest().idx()
         } else {
-            mv.pt().idx() + Direction::COUNT
+            mv.pt().idx() + Square::COUNT
         };
         type_idx * Square::COUNT + mv.sq().idx()
     }
