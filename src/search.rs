@@ -362,7 +362,7 @@ fn search<NT: NodeType>(
         let parent_reduction = thread.stack[ply - 1].reduction;
         let parent_static_eval = thread.stack[ply - 1].static_eval;
 
-        if depth < MAX_DEPTH && parent_reduction >= 3 && static_eval + parent_static_eval <= 0 {
+        if depth < MAX_DEPTH && parent_reduction >= 4 && static_eval + parent_static_eval <= 0 {
             depth += 1;
         }
 
