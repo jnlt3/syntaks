@@ -242,6 +242,7 @@ struct SidedTables {
     capstone_hist: CapstoneHist,
     conthist: ConthistTable,
     influence: InfluenceHist,
+    spread_to: InfluenceHist,
 }
 
 impl SidedTables {
@@ -250,6 +251,7 @@ impl SidedTables {
         self.capstone_hist.clear();
         self.conthist.clear();
         self.influence.clear();
+        self.spread_to.clear();
     }
 }
 
@@ -281,6 +283,7 @@ impl History {
             capstone_hist: pos.cap_sq(pos.stm()).map(|cap_sq| &tables.capstone_hist[cap_sq]),
             conthist: prev.map(|prev| &tables.conthist[prev]),
             influence: &tables.influence.entries[bucket],
+            spread_to: &tables.spread_to.entries[bucket],
         }
     }
 }
@@ -291,6 +294,7 @@ pub struct HistorySlice<'a> {
     capstone_hist: Option<&'a CombinedHist>,
     conthist: Option<&'a ConthistSubTable>,
     influence: &'a [Entry; Square::COUNT],
+    spread_to: &'a [Entry; Square::COUNT],
 }
 
 impl<'a> HistorySlice<'a> {
@@ -301,6 +305,8 @@ impl<'a> HistorySlice<'a> {
         }
         if !mv.is_spread() {
             res += self.influence[mv.sq().idx()].get();
+        } else {
+            res += self.spread_to[mv.spread_dest().idx()].get();
         }
         if let Some(conthist) = self.conthist {
             res += conthist[mv].get();
@@ -316,6 +322,8 @@ impl<'a> HistorySlice<'a> {
         }
         if !mv.is_spread() {
             self.influence[mv.sq().idx()].update(bonus);
+        } else {
+            self.spread_to[mv.spread_dest().idx()].update(bonus);
         }
         if let Some(conthist) = self.conthist {
             conthist[mv].update(bonus);
