@@ -518,6 +518,13 @@ fn search<NT: NodeType>(
                     extension += 1
                         + i32::from(!NT::PV_NODE && score < s_beta - SE_DEXT_MARGIN)
                         + i32::from(!NT::PV_NODE && score < s_beta - SE_TEXT_MARGIN);
+
+                    tunable!(SE_HIST_BONUS_SCALE: i32 = 482; range(0, 1024));
+                    tunable!(SE_HIST_BONUS_OFFSET: i32 = 479; range(0, 1024));
+                    tunable!(SE_HIST_BONUS_MAX: i32 = 3655; range(0, 4096));
+
+                    let bonus = (SE_HIST_BONUS_SCALE * depth - SE_HIST_BONUS_OFFSET).clamp(0, SE_HIST_BONUS_MAX.val());
+                    history.update(mv, bonus);
                 } else if !NT::PV_NODE && score >= beta {
                     return score;
                 } else if tt_entry.score >= beta {
