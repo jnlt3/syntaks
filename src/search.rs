@@ -393,7 +393,7 @@ fn search<NT: NodeType>(
         if expected_cutnode && depth >= 4 && static_eval >= beta && thread.stack[ply - 1].mv.is_some() {
             let r = (NMP_BASE_R + NMP_DEPTH_SCALE * depth) / 1024;
 
-            let new_pos = thread.apply_nullmove(ply, pos);
+            let new_pos = thread.apply_nullmove(ply, pos);  
 
             let score = -search::<NonPvNode>(
                 thread,
@@ -453,7 +453,7 @@ fn search<NT: NodeType>(
             tunable!(LMP_BASE: i32 = 1629; range(0, 2048));
             tunable!(LMP_DEPTH_SCALE: i32 = 310; range(0, 1024));
 
-            if depth <= 8 {
+            if depth <= 10 {
                 let losing = static_eval + LMP_LOSING_MARGIN <= alpha;
                 let limit = (LMP_BASE + LMP_DEPTH_SCALE * depth * depth)
                     * (1 + i32::from(improving))
