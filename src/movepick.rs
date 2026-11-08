@@ -22,7 +22,7 @@
  */
 
 use crate::bitboard::Bitboard;
-use crate::core::{Direction, PieceType, Score, Square};
+use crate::core::{Color, Direction, PieceType, Score, Square};
 use crate::history::HistorySlice;
 use crate::hits::find_hits;
 use crate::movegen::generate_moves;
@@ -134,8 +134,16 @@ fn first_winning_spread(
 }
 
 #[must_use]
+pub fn spread_road_win_threat(pos: &Position) -> Option<Move> {
+    spread_road_win_inner(pos, pos.stm().flip())
+}
+
+#[must_use]
 pub fn spread_road_win(pos: &Position) -> Option<Move> {
-    let us = pos.stm();
+    spread_road_win_inner(pos, pos.stm())
+}
+
+fn spread_road_win_inner(pos: &Position, us: Color) -> Option<Move> {
     let infl = pos.influence(us);
     let criticals = (infl[0] & infl[1]) | (infl[2] & infl[3]);
     let near = criticals
