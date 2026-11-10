@@ -379,7 +379,7 @@ impl TranspositionTable {
         let replace = flag == Some(TtFlag::Exact)
             || entry_key != existing_key
             || existing_entry.age_flag.age() != self.age
-            || depth + 4 > existing_entry.depth();
+            || depth * 2 > existing_entry.depth();
 
         if !replace {
             return;

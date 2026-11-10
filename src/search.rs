@@ -390,7 +390,7 @@ fn search<NT: NodeType>(
         tunable!(NMP_DEPTH_SCALE: i32 = 452; range(0, 1024));
 
         // nullmove pruning (nmp)
-        if expected_cutnode && depth >= 4 && static_eval >= beta && thread.stack[ply - 1].mv.is_some() {
+        if expected_cutnode && depth >= 6 && static_eval >= beta && thread.stack[ply - 1].mv.is_some() {
             let r = (NMP_BASE_R + NMP_DEPTH_SCALE * depth) / 1024;
 
             let new_pos = thread.apply_nullmove(ply, pos);
@@ -518,6 +518,14 @@ fn search<NT: NodeType>(
                     extension += 1
                         + i32::from(!NT::PV_NODE && score < s_beta - SE_DEXT_MARGIN)
                         + i32::from(!NT::PV_NODE && score < s_beta - SE_TEXT_MARGIN);
+
+                    tunable!(SE_HIST_BONUS_SCALE: i32 = 482; range(0, 1024));
+                    tunable!(SE_HIST_BONUS_OFFSET: i32 = 479; range(0, 1024));
+                    tunable!(SE_HIST_BONUS_MAX: i32 = 3655; range(0, 4096));
+
+                    let bonus =
+                        (SE_HIST_BONUS_SCALE * s_depth - SE_HIST_BONUS_OFFSET).clamp(0, SE_HIST_BONUS_MAX.val());
+                    history.update(mv, bonus);
                 } else if !NT::PV_NODE && score >= beta {
                     return score;
                 } else if tt_entry.score >= beta {
