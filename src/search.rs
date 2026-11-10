@@ -352,6 +352,13 @@ fn search<NT: NodeType>(
     let corrhist = thread.corrhist.slice(pos, &thread.key_history);
     let correction = corrhist.get();
     let static_eval = raw_eval + correction;
+    let prev = (ply > 0).then(|| (thread.stack[ply - 1].mv, thread.stack[ply - 1].static_eval));
+    if let Some((prev_move, parent_eval)) = prev
+        && prev_move.is_none()
+        && parent_eval + static_eval < 500
+    {
+        return beta;
+    }
 
     thread.stack[ply].static_eval = static_eval;
 
