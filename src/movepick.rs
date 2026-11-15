@@ -231,10 +231,11 @@ pub struct KillerTable {
 }
 
 impl KillerTable {
-    const COUNT: usize = 2;
+    const COUNT: usize = 3;
 
     pub fn push(&mut self, mv: Move) {
         if self.killers[0] != Some(mv) {
+            self.killers[2] = self.killers[1];
             self.killers[1] = self.killers[0];
             self.killers[0] = Some(mv);
         }
@@ -280,6 +281,9 @@ impl<'a> Movepicker<'a> {
 
             if self.killers.killers[1] == Some(mv) {
                 score += KILLER_MOVE_BONUS;
+            }
+            if self.killers.killers[2] == Some(mv) {
+                score += 8192;
             }
             if !mv.is_spread() {
                 score -= PLACEMENT_PENALTY;
