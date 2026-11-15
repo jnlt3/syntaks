@@ -817,7 +817,17 @@ fn leaf<NT: NodeType>(
     }
 
     let correction = thread.corrhist.slice(pos, &thread.key_history).get();
-    let static_eval = raw_eval + correction;
+    let mut static_eval = raw_eval + correction;
+
+    if !NT::PV_NODE
+        && let Some(flag) = tt_entry.flag
+    {
+        static_eval = match flag {
+            TtFlag::UpperBound => i32::min(tt_entry.score, static_eval),
+            TtFlag::LowerBound => i32::max(tt_entry.score, static_eval),
+            TtFlag::Exact => unreachable!(),
+        }
+    }
 
     if ply >= MAX_DEPTH as usize {
         return static_eval;
