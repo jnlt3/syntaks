@@ -823,23 +823,6 @@ fn leaf<NT: NodeType>(
         return static_eval;
     }
 
-    let repeated = depth <= -4 && thread.key_history[thread.key_history.len() - 4] == pos.key();
-    if !NT::PV_NODE
-        && tt_hit
-        && !repeated
-        && let Some((mv, flag)) = Option::zip(tt_entry.mv, tt_entry.flag)
-        && pos.is_legal(mv)
-    {
-        let new_pos = thread.apply_move(ply, pos, mv);
-        let score = -leaf::<NT>(thread, &new_pos, depth - 1, ply + 1, -alpha - 1, -alpha);
-        thread.pop_move();
-        let score = match flag {
-            TtFlag::UpperBound => i32::min(static_eval, score),
-            TtFlag::LowerBound => i32::max(static_eval, score),
-            TtFlag::Exact => unreachable!(),
-        };
-        return account_for_spread(score, pos, ply, beta);
-    }
     account_for_spread(static_eval, pos, ply, beta)
 }
 
