@@ -520,10 +520,8 @@ fn search<NT: NodeType>(
                         + i32::from(!NT::PV_NODE && score < s_beta - SE_TEXT_MARGIN);
                 } else if !NT::PV_NODE && score >= beta {
                     return score;
-                } else if tt_entry.score >= beta {
-                    extension -= 1;
-                } else if expected_cutnode {
-                    extension -= 1;
+                } else {
+                    extension -= i32::from(tt_entry.score >= beta) + i32::from(expected_cutnode);
                 }
             } else if depth <= 7
                 && (ply as i32) < thread.root_depth * 2
