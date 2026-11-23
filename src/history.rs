@@ -241,6 +241,7 @@ struct SidedTables {
     hist: CombinedHist,
     capstone_hist: CapstoneHist,
     conthist: ConthistTable,
+    opp_conthist: ConthistTable,
     influence: InfluenceHist,
 }
 
@@ -249,6 +250,7 @@ impl SidedTables {
         self.hist.clear();
         self.capstone_hist.clear();
         self.conthist.clear();
+        self.opp_conthist.clear();
         self.influence.clear();
     }
 }
@@ -273,13 +275,14 @@ impl History {
         }
     }
 
-    pub fn hist_slice<'a>(&'a self, pos: &Position, prev: Option<Move>) -> HistorySlice<'a> {
+    pub fn hist_slice<'a>(&'a self, pos: &Position, cont_1: Option<Move>, cont_2: Option<Move>) -> HistorySlice<'a> {
         let tables = &self.tables[pos.stm()];
         let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
         HistorySlice {
             hist: &tables.hist,
             capstone_hist: pos.cap_sq(pos.stm()).map(|cap_sq| &tables.capstone_hist[cap_sq]),
-            conthist: prev.map(|prev| &tables.conthist[prev]),
+            cont_1: cont_1.map(|cont_1| &tables.opp_conthist[cont_1]),
+            cont_2: cont_2.map(|cont_2| &tables.conthist[cont_2]),
             influence: &tables.influence.entries[bucket],
         }
     }
@@ -289,7 +292,8 @@ impl History {
 pub struct HistorySlice<'a> {
     hist: &'a CombinedHist,
     capstone_hist: Option<&'a CombinedHist>,
-    conthist: Option<&'a ConthistSubTable>,
+    cont_1: Option<&'a ConthistSubTable>,
+    cont_2: Option<&'a ConthistSubTable>,
     influence: &'a [Entry; Square::COUNT],
 }
 
@@ -302,8 +306,11 @@ impl<'a> HistorySlice<'a> {
         if !mv.is_spread() {
             res += self.influence[mv.sq().idx()].get();
         }
-        if let Some(conthist) = self.conthist {
-            res += conthist[mv].get();
+        if let Some(cont_1) = self.cont_1 {
+            res += cont_1[mv].get();
+        }
+        if let Some(cont_2) = self.cont_2 {
+            res += cont_2[mv].get();
         }
         res
     }
@@ -317,8 +324,11 @@ impl<'a> HistorySlice<'a> {
         if !mv.is_spread() {
             self.influence[mv.sq().idx()].update(bonus);
         }
-        if let Some(conthist) = self.conthist {
-            conthist[mv].update(bonus);
+        if let Some(cont_1) = self.cont_1 {
+            cont_1[mv].update(bonus);
+        }
+        if let Some(cont_2) = self.cont_2 {
+            cont_2[mv].update(bonus);
         }
     }
 }

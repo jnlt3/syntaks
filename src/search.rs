@@ -421,9 +421,10 @@ fn search<NT: NodeType>(
 
     let mut tt_flag = TtFlag::UpperBound;
 
-    let prev_move = if ply > 0 { thread.stack[ply - 1].mv } else { None };
+    let cont_1 = if ply > 0 { thread.stack[ply - 1].mv } else { None };
+    let cont_2 = if ply > 1 { thread.stack[ply - 2].mv } else { None };
 
-    let history = thread.history.hist_slice(pos, prev_move);
+    let history = thread.history.hist_slice(pos, cont_1, cont_2);
     let mut movepicker = Movepicker::new(
         pos,
         &mut data.movelist,
