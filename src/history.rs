@@ -273,13 +273,14 @@ impl History {
         }
     }
 
-    pub fn hist_slice<'a>(&'a self, pos: &Position, prev: Option<Move>) -> HistorySlice<'a> {
+    pub fn hist_slice<'a>(&'a self, pos: &Position, cont_1: Option<Move>, cont_3: Option<Move>) -> HistorySlice<'a> {
         let tables = &self.tables[pos.stm()];
         let bucket = InfluenceHist::bucket(pos.influence(pos.stm()));
         HistorySlice {
             hist: &tables.hist,
             capstone_hist: pos.cap_sq(pos.stm()).map(|cap_sq| &tables.capstone_hist[cap_sq]),
-            conthist: prev.map(|prev| &tables.conthist[prev]),
+            cont_1: cont_1.map(|cont_1| &tables.conthist[cont_1]),
+            cont_3: cont_3.map(|cont_3| &tables.conthist[cont_3]),
             influence: &tables.influence.entries[bucket],
         }
     }
@@ -289,7 +290,8 @@ impl History {
 pub struct HistorySlice<'a> {
     hist: &'a CombinedHist,
     capstone_hist: Option<&'a CombinedHist>,
-    conthist: Option<&'a ConthistSubTable>,
+    cont_1: Option<&'a ConthistSubTable>,
+    cont_3: Option<&'a ConthistSubTable>,
     influence: &'a [Entry; Square::COUNT],
 }
 
@@ -302,7 +304,10 @@ impl<'a> HistorySlice<'a> {
         if !mv.is_spread() {
             res += self.influence[mv.sq().idx()].get();
         }
-        if let Some(conthist) = self.conthist {
+        if let Some(conthist) = self.cont_1 {
+            res += conthist[mv].get();
+        }
+        if let Some(conthist) = self.cont_3 {
             res += conthist[mv].get();
         }
         res
@@ -317,7 +322,10 @@ impl<'a> HistorySlice<'a> {
         if !mv.is_spread() {
             self.influence[mv.sq().idx()].update(bonus);
         }
-        if let Some(conthist) = self.conthist {
+        if let Some(conthist) = self.cont_1 {
+            conthist[mv].update(bonus);
+        }
+        if let Some(conthist) = self.cont_3 {
             conthist[mv].update(bonus);
         }
     }
