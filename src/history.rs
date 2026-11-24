@@ -296,7 +296,7 @@ pub struct HistorySlice<'a> {
 }
 
 impl<'a> HistorySlice<'a> {
-    pub fn score(&self, mv: Move) -> i32 {
+    pub fn search_score(&self, mv: Move) -> i32 {
         let mut res = self.hist[mv].get();
         if let Some(capstone_hist) = self.capstone_hist {
             res = (res + capstone_hist[mv].get()) / 2;
@@ -307,6 +307,11 @@ impl<'a> HistorySlice<'a> {
         if let Some(conthist) = self.cont_1 {
             res += conthist[mv].get();
         }
+        res
+    }
+
+    pub fn score(&self, mv: Move) -> i32 {
+        let mut res = self.search_score(mv);
         if let Some(conthist) = self.cont_3 {
             res += conthist[mv].get();
         }
